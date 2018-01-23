@@ -8,9 +8,18 @@ data TreeList a = None | SubTree { firstTree :: Tree a,
                                    restTrees :: TreeList a
                                  } deriving (Show)
 
-
 createSubDir :: Tree a -> a -> Tree a
 createSubDir (Tree root None) directory = Tree root (SubTree (Tree directory None) None)
+
+-- Print working directory:
+pwd :: Tree FilePath -> FilePath
+pwd directory = root directory
+
+-- Change working directory:
+cd :: Tree FilePath -> FilePath -> Tree FilePath
+cd directoryTree path
+  | path == "."  = directoryTree
+  | otherwise    = firstTree $ subtrees directoryTree -- Stub
 
 main = do
   let fileSystemRoot = Tree "rootDirectory" None
@@ -24,12 +33,19 @@ listDirectoryContents directory = do
   dirContents <- getDirectoryContents "."
   forM (sortBy compare dirContents) (\a -> do putStrLn a)
 
-getInput :: Tree String -> IO (Tree String)
-getInput tree = do
-    print tree
-    putStrLn "$ "
-    command <- getLine
-    let argv = words command
-    if (head argv) == "mkdir"
-    then getInput (createSubDir tree (head $ tail argv))
-    else getInput tree
+getInput :: Tree FilePath -> IO ()
+getInput directoryTree = takeInput directoryTree
+  where takeInput tree = do
+          print tree
+          putStrLn "$ "
+          command <- getLine
+          let argv  = words command
+              argv1 = head $ tail argv
+          case (head argv) of
+            -- Make directory:
+            "mkdir" -> getInput (createSubDir tree argv1)
+            -- Print working directory:
+            "pwd"   -> print $ pwd tree
+            -- Change working directory:
+            "cd"    -> getInput (cd tree argv1)
+          getInput directoryTree
